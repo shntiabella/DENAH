@@ -1,0 +1,33 @@
+@php
+    /** Reusable confirm-delete modal. Binds to host Livewire component via $wire. */
+@endphp
+<div x-data x-show="$wire.confirmingDeletion" x-cloak
+     @keydown.escape.window="$wire.cancelDelete()"
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm" @click="$wire.cancelDelete()"></div>
+    <div class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95">
+        <div class="flex items-start gap-4">
+            <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-red-50 text-red-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>
+            </span>
+            <div class="flex-1">
+                <h3 class="font-display text-lg font-bold text-gray-900">Konfirmasi Hapus</h3>
+                <p class="mt-1 text-sm text-gray-500" x-text="$wire.confirmMessage"></p>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button" @click="$wire.cancelDelete()"
+                    class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">Batal</button>
+            <button type="button" @click="$wire.confirmedDelete()"
+                    class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Hapus</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,1 @@
+const fs = require("fs"); const cfg = JSON.parse(fs.readFileSync(process.argv[2], "utf8")); console.log("parsed OK"); console.log("endpoints:", JSON.stringify(cfg.endpoints)); console.log("classes:", cfg.classifications.length, "| fileYears:", cfg.fileYears.join(","), "| latest:", cfg.latestFileYear); console.log("province:", JSON.stringify(cfg.province));

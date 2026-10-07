@@ -1,0 +1,1304 @@
+﻿<div class="relative bg-[#F8F6F0] text-[#1A1A1A]">
+    @if ($pageBackground)
+        <div class="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+             style="background-image: url('{{ asset('storage/' . $pageBackground) }}');"></div>
+        <div class="pointer-events-none absolute inset-0 z-0 bg-[#faf8f5]/85 backdrop-blur-[2px]"></div>
+    @endif
+    <div class="relative z-10 flex flex-col lg:h-[calc(100vh-4rem)] lg:flex-row">
+        {{-- Panel kiri: filter wilayah, tahun, layer, basemap --}}
+        <aside class="order-2 w-full shrink-0 border-b border-[#E2E8F0] bg-[#f4efe8]/90 shadow-sm backdrop-blur-md lg:order-1 lg:h-full lg:w-72 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+            <div class="space-y-5 p-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-display text-sm font-bold uppercase tracking-wider text-denah-ink">Filter Wilayah</h2>
+                    <button type="button" id="btn-reset-wilayah"
+                            class="rounded-lg border border-denah-ink/10 bg-denah-cream-bg px-2.5 py-1.5 text-xs font-semibold text-denah-ink-muted transition hover:border-denah-terracotta hover:text-denah-terracotta">
+                        Reset Wilayah
+                    </button>
+                </div>
+
+                <div>
+                    <label for="filter-kabupaten" class="mb-1.5 block text-xs font-semibold text-denah-ink-muted">Kabupaten/Kota</label>
+                    <select id="filter-kabupaten" class="w-full rounded-lg border border-denah-ink/15 bg-denah-paper px-3 py-2 text-sm text-denah-ink outline-none focus:border-denah-terracotta">
+                        <option value="">Semua Kabupaten/Kota</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filter-kecamatan" class="mb-1.5 block text-xs font-semibold text-denah-ink-muted">Kecamatan</label>
+                    <select id="filter-kecamatan" disabled
+                            class="w-full rounded-lg border border-denah-ink/15 bg-denah-paper px-3 py-2 text-sm text-denah-ink outline-none focus:border-denah-terracotta disabled:bg-denah-cream-bg disabled:text-denah-ink-muted/50">
+                        <option value="">Semua Kecamatan</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filter-desa" class="mb-1.5 block text-xs font-semibold text-denah-ink-muted">Desa/Kelurahan</label>
+                    <select id="filter-desa" disabled
+                            class="w-full rounded-lg border border-denah-ink/15 bg-denah-paper px-3 py-2 text-sm text-denah-ink outline-none focus:border-denah-terracotta disabled:bg-denah-cream-bg disabled:text-denah-ink-muted/50">
+                        <option value="">Semua Desa/Kelurahan</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filter-tahun" class="mb-1.5 block text-xs font-semibold text-denah-ink-muted">Tahun</label>
+                    <select id="filter-tahun" class="w-full rounded-lg border border-denah-ink/15 bg-denah-paper px-3 py-2 text-sm text-denah-ink outline-none focus:border-denah-terracotta">
+                        <option value="">Semua Tahun</option>
+                        @foreach ($years as $y)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <p class="-mt-2 text-[11px] leading-relaxed text-denah-ink-muted/80">
+                    File raster GeoJSON tersedia untuk tahun: {{ implode(', ', $fileYears) }}.
+
+                <div class="rounded-xl border border-[#E8E0D4] bg-white p-3 shadow-soft">
+                    <p class="text-[11px] leading-relaxed text-[#6B6257]">
+                        Atur tampilan layer (Permukiman, Batas Wilayah) melalui legenda
+                        minimalis di pojok kanan bawah peta.
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+        {{-- Tengah: peta Leaflet --}}
+        <div class="relative order-1 h-[55vh] w-full lg:order-2 lg:h-full lg:flex-1">
+            <div id="denah-map" wire:ignore class="absolute inset-0 z-0"></div>
+            <div id="denah-map-loading" class="pointer-events-none absolute inset-x-0 top-3 z-[500] hidden justify-center">
+                <span class="rounded-full bg-denah-dark/85 px-4 py-1.5 text-xs font-medium text-denah-cream shadow-lg backdrop-blur">Memuat data peta…</span>
+            </div>
+        </div>
+
+                </p>
+
+
+        {{-- Panel kanan: statistik wilayah terpilih (diisi real-time via JS) --}}
+        <aside class="order-3 w-full shrink-0 border-t border-[#E2E8F0] bg-[#f4efe8]/90 shadow-sm backdrop-blur-md lg:h-full lg:w-[380px] lg:overflow-y-auto lg:border-l lg:border-t-0">
+            <div class="p-4">
+                <div class="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                        <span id="stats-level" class="inline-flex items-center gap-1.5 rounded-full border border-denah-terracotta/30 bg-denah-terracotta/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-denah-terracotta">Provinsi</span>
+                        <h2 id="stats-name" class="mt-2 font-display text-xl font-extrabold leading-tight text-denah-ink">{{ $province->name ?? '' }}</h2>
+                        <p id="stats-path" class="mt-1 text-xs leading-relaxed text-denah-ink-muted">Seluruh wilayah</p>
+                    </div>
+                    <button type="button" id="btn-reset-stats"
+                            class="shrink-0 rounded-lg border border-denah-ink/10 px-2.5 py-1.5 text-xs font-semibold text-denah-ink-muted transition hover:border-denah-terracotta hover:text-denah-terracotta">
+                        Reset
+                    </button>
+                </div>
+
+                <div id="stats-body" aria-live="polite">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="rounded-xl border border-[#E2E8F0] bg-white p-3 shadow-sm border-l-4 border-l-[#658B38]">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-denah-ink-muted">Total Lokasi</p>
+                            <p id="stat-total-lokasi" class="mt-1 text-2xl font-bold text-denah-ink">0</p>
+                            <p id="stat-total-records" class="text-[11px] text-denah-ink-muted">0</p>
+                        </div>
+                        <div class="rounded-xl border border-[#E2E8F0] bg-white p-3 shadow-sm border-l-4 border-l-[#658B38]">
+                            <p class="text-[11px] font-semibold uppercase tracking-wide text-denah-ink-muted">Total Luas</p>
+                            <p id="stat-total-luas" class="mt-1 text-2xl font-bold text-denah-ink">0</p>
+                            <p class="text-[11px] text-denah-ink-muted">Ha</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 rounded-xl border border-[#E2E8F0] bg-white p-3 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-denah-ink-muted">Tahun</span>
+                            <span id="stat-year-label" class="text-sm font-bold text-denah-ink">Semua Tahun</span>
+                        </div>
+                        <div id="stat-change" class="mt-2"></div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-denah-ink">Perkembangan per Tahun</h3>
+                        <div id="stats-by-year" class="relative h-44">
+                            <canvas id="chart-year-peta"></canvas>
+                            <p id="stats-by-year-empty" class="hidden py-6 text-center text-xs text-denah-ink-muted">Belum ada data.</p>
+                        </div>
+                        <p class="mt-2 text-[11px] leading-relaxed text-denah-ink-muted">Total luas permukiman (Ha) per tahun</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+@push('head')
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        /* Legenda minimalis — tema Earthy Modern */
+        .denah-legend {
+            background: #FFFFFF;
+            border: 1px solid #EAE2D5;
+            border-radius: 14px;
+            box-shadow: 0 10px 28px -14px rgba(46, 37, 27, 0.28);
+            padding: 10px 12px 8px;
+            min-width: 156px;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        .denah-legend-header {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #8B6E4E;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #EFE9DF;
+        }
+        .denah-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 0;
+            font-size: 12px;
+            font-weight: 500;
+            color: #2B2B2B;
+            cursor: pointer;
+        }
+        .denah-legend-item input { accent-color: #8B6E4E; cursor: pointer; }
+        .denah-legend .swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            display: inline-block;
+            flex: none;
+        }
+        .denah-legend .swatch-line { height: 4px; border-radius: 999px; background: #6B5B4D; }
+        .denah-legend-note {
+            margin: 6px 0 0;
+            padding-top: 6px;
+            border-top: 1px solid #EFE9DF;
+            font-size: 10px;
+            color: #9A8F80;
+        }
+    </style>
+@endpush
+
+@push('scripts')
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+@endpush
+
+@script
+<script>
+    (function () {
+        'use strict';
+
+        const CFG = @js($jsConfig);
+
+        const LEVEL_LABEL = { provinsi: 'Provinsi', kabupaten: 'Kabupaten/Kota', kecamatan: 'Kecamatan', desa: 'Desa/Kelurahan' };
+        // Tema "Earthy Modern": Cokelat Warm untuk permukiman, Cokelat Gelap untuk batas.
+        const AVOCADO = '#8B6E4E'; // fill permukiman / aksen aktif
+        const EARTH = '#3D2B1F';   // border administrasi & border poligon permukiman
+        const STYLE = {
+            provinsi: { color: EARTH, weight: 2, dashArray: '4 4', fillOpacity: 0, fillColor: EARTH },
+            kabupaten: { color: EARTH, weight: 1.2, dashArray: '4 4', fillOpacity: 0, fillColor: EARTH },
+            kecamatan: { color: EARTH, weight: 1.2, dashArray: '4 4', fillOpacity: 0, fillColor: EARTH },
+            desa: { color: EARTH, weight: 1.2, dashArray: '2 3', fillOpacity: 0, fillColor: EARTH },
+        };
+        const MAX_ZOOM = { provinsi: 9, kabupaten: 11, kecamatan: 13, desa: 14 };
+        // Fitur raster dengan bentang bbox lebih besar dari ini dianggap poligon
+        // latar (artefak dissolve menutupi hampir seluruh provinsi) dan tidak digambar.
+        const RASTER_MAX_SPAN_DEG = 0.5;
+        // Sel permukiman yang pada zoom aktif lebih kecil dari nilai ini (piksel)
+        // digambar sebagai titik kecil agar tetap tampak di seluruh Bengkulu.
+        const RASTER_MIN_PX = 4;
+        const RASTER_DOT_RADIUS = 2.5;
+
+        let map = null;
+        // fitBounds hanya dieksekusi saat event filter wilayah (Kabupaten/Kecamatan/Desa)
+        // berubah/dipilih, BUKAN saat user meng-otak-atik checkbox Layer Peta.
+        let filterUpdated = false;
+const overlays = { permukiman: null, provinsi: null, kabupaten: null, kecamatan: null, desa: null, highlight: null };
+        const boundaries = {};                 // (vestigial) batas kini bersumber dari batas_wilayah.json
+        const featureIndex = new Map();        // id -> { level, feature } (diisi dari batas_wilayah.json)
+        const layerIndex = new Map();          // 'level:id' -> L.Layer
+        const fetchCache = new Map();          // url -> Promise(json)
+        const rasterCache = new Map();         // 'tahun@lingkup-wilayah' -> { features, summary }
+        const regionCache = new Map();         // 'year:areaId' -> { sel, count, areaHa }
+        let rasterLayer = null;
+        let yearPetaChart = null;
+        let loadingCount = 0;
+        let rasterBoundsFitted = false;
+        let rasterRebuildTimer = null;
+
+        // --- sumber batas wilayah: public/data/batas_wilayah.json (dimuat SEKALI di browser) ---
+        const PROVINCE_ID = '__province__';    // id fiktif untuk tingkat Provinsi
+        let batasFC = null;                    // seluruh FeatureCollection batas
+        let batasBuilt = false;                // penanda index sudah dibangun
+        let kabupatenList = [];
+        let kecamatanList = [];
+        let desaList = [];
+
+        const state = {
+            level: 'provinsi',
+            areaId: null, regencyId: null, districtId: null, villageId: null,
+            year: null,
+        };
+
+        const els = {};
+        ['filter-kabupaten', 'filter-kecamatan', 'filter-desa', 'filter-tahun',
+            'btn-reset-wilayah', 'btn-reset-stats', 'denah-map-loading',
+            'stats-level', 'stats-name', 'stats-path', 'stat-total-lokasi', 'stat-total-records',
+            'stat-total-luas', 'stat-year-label', 'stat-change', 'raster-file', 'raster-stats',
+            'stats-by-year']
+            .forEach(function (id) {
+                const key = id.replace(/-([a-z])/g, function (m, c) { return c.toUpperCase(); });
+                els[key] = document.getElementById(id);
+            });
+
+        // ---------- util umum ----------
+        const fmtInt = new Intl.NumberFormat('id-ID');
+        const fmtDec = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        function escapeHtml(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        // Perbaiki encoding teks (mojibake) pada nama wilayah
+// (data UTF-8 terbaca sebagai Latin-1/Windows-1252).
+        // Aman untuk teks ASCII/unicode normal: hanya berubah bila menemukan pola mojibake.
+        function fixEncoding(str) {
+            if (str == null) return str;
+            const s = String(str);
+            // Sudah berisi karakter unicode asli (> U+00FF) -> jangan ubah.
+            for (let i = 0; i < s.length; i++) {
+                if (s.charCodeAt(i) > 0xFF) return s;
+            }
+            // Deteksi byte khas mojibake (tiga byte UTF-8, diawali C2..EF).
+            let suspicious = false;
+            for (let i = 0; i < s.length; i++) {
+                const c = s.charCodeAt(i);
+                if (c >= 0xC0 && c <= 0xEF && i + 1 < s.length && (s.charCodeAt(i + 1) & 0xC0) === 0x80) {
+                    suspicious = true;
+                    break;
+                }
+            }
+            if (!suspicious) return s;
+            const bytes = new Uint8Array(s.length);
+            for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i) & 0xFF;
+            try {
+                return new TextDecoder('utf-8').decode(bytes);
+            } catch (e) {
+                return s;
+            }
+        }
+
+        // Nama tampilan dari sebuah feature GeoJSON dengan perbaikan encoding.
+        function displayName(f) {
+            const p = f && f.properties ? f.properties : null;
+            return p && p.name != null ? fixEncoding(p.name) : '';
+        }
+
+        function numOrNull(v) { const n = parseInt(v, 10); return isNaN(n) ? null : n; }
+
+        function fetchJSON(url) {
+            if (!fetchCache.has(url)) {
+                fetchCache.set(url, fetch(url, { headers: { Accept: 'application/json' } })
+                    .then(function (r) { if (!r.ok) { throw new Error('HTTP ' + r.status); } return r.json(); })
+                    .catch(function (e) { fetchCache.delete(url); throw e; }));
+            }
+            return fetchCache.get(url);
+        }
+
+        function loading(on) {
+            loadingCount = Math.max(0, loadingCount + (on ? 1 : -1));
+            if (els.denahMapLoading) els.denahMapLoading.classList.toggle('hidden', loadingCount === 0);
+            if (els.denahMapLoading) els.denahMapLoading.classList.toggle('flex', loadingCount > 0);
+        }
+
+
+        // ---------- matematika geo (shoelace equirectangular + point-in-polygon) ----------
+        function walkCoords(coords, cb) {
+            if (!Array.isArray(coords)) return;
+            if (typeof coords[0] === 'number' && typeof coords[1] === 'number') { cb(coords[0], coords[1]); return; }
+            coords.forEach(function (c) { walkCoords(c, cb); });
+        }
+
+        function geomBbox(g) {
+            const bb = { minLng: Infinity, minLat: Infinity, maxLng: -Infinity, maxLat: -Infinity };
+            if (!g) return bb;
+            walkCoords(g.coordinates, function (lng, lat) {
+                if (lng < bb.minLng) bb.minLng = lng;
+                if (lng > bb.maxLng) bb.maxLng = lng;
+                if (lat < bb.minLat) bb.minLat = lat;
+                if (lat > bb.maxLat) bb.maxLat = lat;
+            });
+            return bb;
+        }
+
+        // ---------- point-in-polygon (ray casting) untuk filter sel permukiman ----------
+        // Satu-satunya implementasi pointInRing adalah versi (lng, lat, ring) di
+        // bawah (dekat geomContains). Sebelumnya ada dua deklarasi dengan urutan
+        // argumen berbeda; hoisting JS membuat deklarasi kedua menimpa yang pertama
+        // sehingga uji titik-dalam-poligon selalu false dan layer klasifikasi
+        // kosong saat filter wilayah aktif. Gunakan geomContains(g, lng, lat).
+        // Geometri wilayah yang sedang dipilih (untuk memfilter sel permukiman).
+        function selectedRegionGeometry() {
+            if (state.level === 'provinsi' || !state.areaId) return null;
+            const entry = featureIndex.get(state.areaId);
+            return entry ? (entry.feature.geometry || null) : null;
+        }
+
+        function ringAreaKm2(ring) {
+            const n = ring.length;
+            if (n < 4) return 0;
+            let sumLat = 0;
+            for (let i = 0; i < n - 1; i++) sumLat += ring[i][1];
+            const cos0 = Math.cos((sumLat / (n - 1)) * Math.PI / 180);
+            const R = 6378137;
+            let total = 0;
+            for (let i = 0; i < n - 1; i++) {
+                const x1 = R * cos0 * ring[i][0] * Math.PI / 180, y1 = R * ring[i][1] * Math.PI / 180;
+                const x2 = R * cos0 * ring[i + 1][0] * Math.PI / 180, y2 = R * ring[i + 1][1] * Math.PI / 180;
+                total += (x1 * y2 - x2 * y1);
+            }
+            return Math.abs(total) / 2 / 1e6;
+        }
+
+        function polyAreaKm2(poly) {
+            if (!poly || !poly.length) return 0;
+            let area = ringAreaKm2(poly[0]);
+            for (let i = 1; i < poly.length; i++) area -= ringAreaKm2(poly[i]);
+            return Math.abs(area);
+        }
+
+        function geomAreaKm2(g) {
+            if (!g) return 0;
+            const polys = g.type === 'Polygon' ? [g.coordinates] : (g.type === 'MultiPolygon' ? g.coordinates : []);
+            let total = 0;
+            polys.forEach(function (p) { total += polyAreaKm2(p); });
+            return total;
+        }
+
+        function ringCentroid(ring) {
+            let sx = 0, sy = 0;
+            const n = Math.max(1, ring.length - 1);
+            for (let i = 0; i < n; i++) { sx += ring[i][0]; sy += ring[i][1]; }
+            return [sx / n, sy / n];
+        }
+
+        function eachSubPolygon(g, cb) {
+            if (!g) return;
+            if (g.type === 'Polygon') { cb(g.coordinates); return; }
+            if (g.type === 'MultiPolygon') g.coordinates.forEach(function (p) { cb(p); });
+        }
+
+        function pointInRing(lng, lat, ring) {
+            let inside = false;
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+                if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+            }
+            return inside;
+        }
+
+        function geomContains(g, lng, lat) {
+            let hit = false;
+            eachSubPolygon(g, function (poly) {
+                if (hit) return;
+                if (!pointInRing(lng, lat, poly[0])) return;
+                let inHole = false;
+                for (let i = 1; i < poly.length; i++) {
+                    if (pointInRing(lng, lat, poly[i])) { inHole = true; break; }
+                }
+                if (!inHole) hit = true;
+            });
+            return hit;
+        }
+
+
+        // ---------- normalisasi koordinat GeoJSON (deteksi & flip terbalik) ----------
+        // GeoJSON standar WGS84 (OGC:CRS84) memakai urutan [longitude, latitude].
+        // Namun sebagian data permukiman tersimpan dengan urutan [lat, lng] terbalik,
+        // sehingga poligong terlempar jauh ke laut / luar pulau. Deteksi heuristik
+        // bergantung pada rentang sah WGS84: longitude [-180, 180], latitude [-90, 90].
+        function coordsLookFlipped(lng, lat) {
+            if (Math.abs(lng) > 180) return true;   // nilai pertama bukan longitude -> urutan [lat, lng]
+            if (Math.abs(lat) > 90)  return false;  // nilai kedua bukan latitude -> urutan [lng, lat] benar
+            if (Math.abs(lng) > 90)  return false;  // nilai pertama > 90 hanya bisa jadi longitude
+            if (Math.abs(lat) > 90)  return true;   // nilai kedua > 90 hanya bisa jadi longitude -> [lat,lng]
+            return false;                           // keduanya |x|,|y| <= 90: ambigu, anggap sudah [lng,lat]
+        }
+
+        function deepFlipCoords(coords) {
+            if (!Array.isArray(coords)) return coords;
+            if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+                return [coords[1], coords[0]];  // swap [a,b] -> [b,a]
+            }
+            return coords.map(deepFlipCoords);
+        }
+
+        function normalizeGeometry(geom) {
+            if (!geom || !geom.type || !geom.coordinates) return geom;
+            const flat = [];
+            walkCoords(geom.coordinates, function (lng, lat) { flat.push([lng, lat]); });
+
+            let flipped = false;
+            // Periksa sampel (sampai 200 titik pertama) untuk efisiensi.
+            for (let i = 0; i < Math.min(flat.length, 200); i++) {
+                if (coordsLookFlipped(flat[i][0], flat[i][1])) { flipped = true; break; }
+            }
+            if (!flipped) return geom;           // sudah [lng, lat], tidak perlu di-flip
+            return { type: geom.type, coordinates: deepFlipCoords(geom.coordinates) };
+        }
+
+
+        // ---------- peta Leaflet ----------
+        function ensureMap() {
+            const el = document.getElementById('denah-map');
+            if (!el || typeof L === 'undefined') return null;
+            if (map) return map;
+            const center = CFG.province && CFG.province.lat ? [CFG.province.lat, CFG.province.lng] : [-3.78, 102.26];
+            map = L.map(el, { zoomControl: true, scrollWheelZoom: true, preferCanvas: true }).setView(center, 8);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+overlays.permukiman = L.layerGroup().addTo(map);
+            overlays.provinsi = L.layerGroup().addTo(map);
+            overlays.kabupaten = L.layerGroup();
+            overlays.kecamatan = L.layerGroup();
+            overlays.desa = L.layerGroup();
+            overlays.highlight = L.layerGroup().addTo(map);
+            // Control Scale metrik (km/m) di pojok kiri bawah peta.
+            L.control.scale({ imperial: false, position: 'bottomleft', maxWidth: 180 }).addTo(map);
+            // Legenda minimalis + toggle layer di pojok kanan bawah peta.
+            buildLegendControl().addTo(map);
+            // Perbarui tampilan sel permukiman (titik <-> poligon) setelah zoom berubah.
+            map.on('zoomend', function () {
+                if (!overlays.permukiman || !rasterCache.has(rasterKey(currentRasterYear()))) return;
+                if (rasterRebuildTimer) clearTimeout(rasterRebuildTimer);
+                rasterRebuildTimer = setTimeout(function () { rebuildRasterLayer(); }, 120);
+            });
+            return map;
+        }
+
+        // Legenda minimalis "Earthy Modern" — floating control kanan bawah.
+        function buildLegendControl() {
+            const control = L.control({ position: 'bottomright' });
+            control.onAdd = function () {
+                const div = L.DomUtil.create('div', 'denah-legend');
+                div.innerHTML =
+                    '<div class="denah-legend-header">Layer Peta</div>'
+                    + '<label class="denah-legend-item"><input type="checkbox" data-overlay="permukiman" checked>'
+                    + '<span class="swatch" style="background:#8B6E4E"></span>Permukiman</label>'
+                    + '<label class="denah-legend-item"><input type="checkbox" data-overlay="batas" checked>'
+                    + '<span class="swatch swatch-line"></span>Batas Wilayah</label>';
+                
+                L.DomEvent.disableClickPropagation(div);
+                L.DomEvent.disableScrollPropagation(div);
+
+                const checkboxes = div.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    L.DomEvent.on(cb, 'click', function (e) {
+                        L.DomEvent.stopPropagation(e);
+                    });
+
+                    L.DomEvent.on(cb, 'change', function (e) {
+                        const overlayType = e.target.getAttribute('data-overlay');
+                        const isChecked = e.target.checked;
+
+                        if (overlayType === 'batas') {
+                            // Mengontrol layer batas wilayah (overlays.data & overlays.highlight)
+                            if (typeof overlays !== 'undefined') {
+                                if (isChecked) {
+                                    if (overlays.data && map && !map.hasLayer(overlays.data)) map.addLayer(overlays.data);
+                                    if (overlays.highlight && map && !map.hasLayer(overlays.highlight)) map.addLayer(overlays.highlight);
+                                } else {
+                                    if (overlays.data && map && map.hasLayer(overlays.data)) map.removeLayer(overlays.data);
+                                    if (overlays.highlight && map && map.hasLayer(overlays.highlight)) map.removeLayer(overlays.highlight);
+                                }
+                            }
+                        }
+                    });
+                });
+
+                return div;
+            };
+            return control;
+        }
+        // ---------- hierarchy wilayah (sumber: public/data/batas_wilayah.json) ----------
+function normCode(s) { return s == null ? '' : String(s).trim(); }
+
+        function mergeGeometries(geoms) {
+            const polys = [];
+            (geoms || []).forEach(function (g) {
+                if (!g) return;
+                if (g.type === 'Polygon') polys.push(g.coordinates);
+                else if (g.type === 'MultiPolygon') g.coordinates.forEach(function (c) { polys.push(c); });
+            });
+            if (polys.length === 1) return { type: 'Polygon', coordinates: polys[0] };
+            if (polys.length > 1) return { type: 'MultiPolygon', coordinates: polys };
+            return null;
+        }
+
+        function extentOf(geoms) {
+            const bb = { minLng: Infinity, minLat: Infinity, maxLng: -Infinity, maxLat: -Infinity };
+            let hit = false;
+            (geoms || []).forEach(function (g) {
+                if (!g) return;
+                const b = geomBbox(g);
+                if (!isFinite(b.minLng)) return;
+                hit = true;
+                bb.minLng = Math.min(bb.minLng, b.minLng);
+                bb.minLat = Math.min(bb.minLat, b.minLat);
+                bb.maxLng = Math.max(bb.maxLng, b.maxLng);
+                bb.maxLat = Math.max(bb.maxLat, b.maxLat);
+            });
+            return hit ? bb : null;
+        }
+
+        function centroidOf(bb) { return bb ? [(bb.minLat + bb.maxLat) / 2, (bb.minLng + bb.maxLng) / 2] : null; }
+function buildBatasIndex(fc) {
+            featureIndex.clear();
+            kabupatenList.length = 0;
+            kecamatanList.length = 0;
+            desaList.length = 0;
+            const features = (fc && fc.features) || [];
+            const provName = features.length ? normCode(features[0].properties && features[0].properties.LEVEL_3) : 'Bengkulu';
+            const kabAgg = new Map();
+            const kecAgg = new Map();
+            const provGeoms = [];
+
+            features.forEach(function (f) {
+                const p = f.properties || {};
+                const L4 = normCode(p.LEVEL_4), L5 = normCode(p.LEVEL_5);
+                const L6 = normCode(p.LEVEL_6), gc = normCode(p.GEOCODE);
+                if (!gc || !f.geometry) return;
+                const kecId = (L4 && L5) ? L4 + '::' + L5 : null;
+                featureIndex.set(gc, {
+                    level: 'desa',
+                    feature: { type: 'Feature', properties: { id: gc, name: L6 || L5, parent_id: kecId, level: 'desa', lat: null, lng: null }, geometry: f.geometry }
+                });
+                desaList.push({ id: gc, name: L6 || L5 });
+                if (kecId && L5) {
+                    if (!kecAgg.has(kecId)) kecAgg.set(kecId, { name: L5, parent: L4, geoms: [] });
+                    kecAgg.get(kecId).geoms.push(f.geometry);
+                }
+                if (L4) {
+                    if (!kabAgg.has(L4)) kabAgg.set(L4, { name: L4, geoms: [] });
+                    kabAgg.get(L4).geoms.push(f.geometry);
+                }
+                provGeoms.push(f.geometry);
+            });
+
+            // Kecamatan
+            kecAgg.forEach(function (agg, key) {
+                const bb = extentOf(agg.geoms), c = centroidOf(bb);
+                featureIndex.set(key, {
+                    level: 'kecamatan',
+                    feature: { type: 'Feature', properties: { id: key, name: agg.name, parent_id: agg.parent, level: 'kecamatan', lat: c ? c[0] : null, lng: c ? c[1] : null }, geometry: mergeGeometries(agg.geoms) }
+                });
+                kecamatanList.push({ id: key, name: agg.name });
+            });
+
+            // Kabupaten
+            kabAgg.forEach(function (agg, key) {
+                const bb = extentOf(agg.geoms), c = centroidOf(bb);
+                featureIndex.set(key, {
+                    level: 'kabupaten',
+                    feature: { type: 'Feature', properties: { id: key, name: agg.name, parent_id: PROVINCE_ID, level: 'kabupaten', lat: c ? c[0] : null, lng: c ? c[1] : null }, geometry: mergeGeometries(agg.geoms) }
+                });
+                kabupatenList.push({ id: key, name: agg.name });
+            });
+
+            // Provinsi
+            const pbb = extentOf(provGeoms), pc = centroidOf(pbb);
+            featureIndex.set(PROVINCE_ID, {
+                level: 'provinsi',
+                feature: { type: 'Feature', properties: { id: PROVINCE_ID, name: provName, parent_id: null, level: 'provinsi', lat: pc ? pc[0] : null, lng: pc ? pc[1] : null }, geometry: mergeGeometries(provGeoms) }
+            });
+            kabupatenList.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'id'); });
+            kecamatanList.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'id'); });
+            desaList.sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'id'); });
+        }
+function desaEntriesOf(districtId) {
+            const out = [];
+            desaList.forEach(function (d) {
+                const en = featureIndex.get(d.id);
+                if (en && en.level === 'desa' && en.feature.properties.parent_id === districtId) out.push(d);
+            });
+            return out;
+        }
+
+        function fillNameOptions(sel, items, placeholder) {
+            sel.innerHTML = '';
+            const first = document.createElement('option');
+            first.value = '';
+            first.textContent = placeholder;
+            sel.appendChild(first);
+            items.slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'id'); })
+                .forEach(function (it) {
+                    const o = document.createElement('option');
+                    o.value = it.id;
+                    o.textContent = fixEncoding(it.name);
+                    sel.appendChild(o);
+                });
+        }
+
+        function rebuildKabupatenOptions() {
+            fillNameOptions(els.filterKabupaten, kabupatenList, 'Semua Kabupaten/Kota');
+        }
+
+        function rebuildKecamatanOptions() {
+            const sel = els.filterKecamatan;
+            if (!state.regencyId) { fillNameOptions(sel, [], 'Semua Kecamatan'); sel.disabled = true; return; }
+            const items = kecamatanList.filter(function (k) {
+                const en = featureIndex.get(k.id);
+                return en && en.feature.properties.parent_id === state.regencyId;
+            });
+            fillNameOptions(sel, items, 'Semua Kecamatan');
+            sel.disabled = false;
+        }
+
+        function rebuildDesaOptions() {
+            const sel = els.filterDesa;
+            if (!state.districtId) { fillNameOptions(sel, [], 'Semua Desa/Kelurahan'); sel.disabled = true; return; }
+            fillNameOptions(sel, desaEntriesOf(state.districtId), 'Semua Desa/Kelurahan');
+            sel.disabled = false;
+            if (state.villageId) sel.value = String(state.villageId);
+        }
+// Layer batas desa: semua desa bersumber dimuat SEKALI dari file.
+        function addBaseBatasLayer() {
+            const grp = overlays.desa;
+            if (!grp || !map) return;
+            grp.clearLayers();
+            const feats = (batasFC && (batasFC.features || [])).filter(function (f) { return f && f.geometry; })
+                .map(function (f) { return { type: 'Feature', properties: f.properties || {}, geometry: f.geometry }; });
+            if (!feats.length) return;
+            L.geoJSON({ type: 'FeatureCollection', features: feats }, { style: STYLE.desa })
+                .eachLayer(function (l) { grp.addLayer(l); });
+        }
+
+        // Highlight wilayah terpilih (desa chisi OR conjunto desa induk).
+        function renderTerritoryHighlight() {
+            const grp = overlays.highlight;
+            if (!grp || !map || !state.areaId) { if (grp) grp.clearLayers(); return; }
+            grp.clearLayers();
+            if (state.level === 'provinsi') return; // do not fill whole province on the initial view
+            const entry = featureIndex.get(state.areaId);
+            const geom = entry ? entry.feature.geometry : null;
+            if (!geom) return;
+            L.geoJSON({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: { name: entry.feature.properties.name }, geometry: geom }] },
+                { color: '#9E4E2C', weight: 2, fillOpacity: 0.26, fillColor: '#C6653C' })
+                .eachLayer(function (l) { grp.addLayer(l); });
+        }
+
+        function refreshDesaOverlay() { /* batas desa already base layer; filter handled elsewhere */ }
+// ---------- seleksi wilayah + zoom ----------
+        function applySelection(level, id) {
+            const isProv = level === 'provinsi';
+            if (!isProv) {
+                const e = featureIndex.get(String(id));
+                if (!e) { syncDropdowns(); return; }
+            }
+            state.level = level;
+            state.areaId = isProv ? PROVINCE_ID : String(id);
+            if (isProv) {
+                state.regencyId = state.districtId = state.villageId = null;
+            } else {
+                const p = (featureIndex.get(state.areaId) || { feature: { properties: {} } }).feature.properties;
+                if (level === 'kabupaten') { state.regencyId = state.areaId; state.districtId = null; state.villageId = null; }
+                else if (level === 'kecamatan') { state.regencyId = p.parent_id || null; state.districtId = state.areaId; state.villageId = null; }
+                else if (level === 'desa') {
+                    state.districtId = p.parent_id || null;
+                    const d = state.districtId ? featureIndex.get(state.districtId) : null;
+                    state.regencyId = d ? (d.feature.properties.parent_id || null) : null;
+                    state.villageId = state.areaId;
+                }
+            }
+            syncDropdowns();
+            if (filterUpdated) { zoomToSelection(); filterUpdated = false; }
+            renderTerritoryHighlight();
+            // Muat/rebuild layer klasifikasi untuk lingkup wilayah aktif.
+            // Cache hit -> rebuild instan; cache miss -> fetch lalu rebuild.
+            loadRaster(true);
+            updateStats();
+        }
+
+        function syncDropdowns() {
+            if (state.regencyId) els.filterKabupaten.value = String(state.regencyId);
+            else els.filterKabupaten.value = state.level === 'kabupaten' ? String(state.areaId) : '';
+            rebuildKecamatanOptions();
+            els.filterKecamatan.value = state.districtId ? String(state.districtId) : '';
+            rebuildDesaOptions();
+        }
+
+        function zoomToSelection() {
+            if (!map) return;
+            const entry = state.areaId ? featureIndex.get(state.areaId) : null;
+            const geom = entry ? entry.feature.geometry : null;
+            if (geom) {
+                const bb = geomBbox(geom);
+                if (isFinite(bb.minLng)) {
+                    map.fitBounds(L.latLngBounds([[bb.minLat, bb.minLng], [bb.maxLat, bb.maxLng]]), { padding: [40, 40], maxZoom: MAX_ZOOM[state.level] || 10 });
+                    return;
+                }
+            }
+            if (CFG.province && CFG.province.lat != null) map.setView([CFG.province.lat, CFG.province.lng], MAX_ZOOM.provinsi);
+        }
+
+
+        // ---------- layer raster permukiman dari public/data/data_{tahun}.geojson ----------
+        function currentRasterYear() { return state.year || CFG.latestFileYear; }
+
+        // Kunci cache raster mencakup lingkup wilayah aktif agar data provinsi
+        // penuh tidak tertukar dengan data hasil filter kabupaten/kecamatan/desa.
+        function rasterScopeKey() {
+            return (state.regencyId || '') + '|' + (state.districtId || '') + '|' + (state.villageId || '');
+        }
+        function rasterKey(year) { return year === null ? null : year + '@' + rasterScopeKey(); }
+
+        let rasterMaxCount = 1;
+        function prepareRaster(fc) {
+            const features = [];
+            let totalCount = 0, totalArea = 0;
+            (fc.features || []).forEach(function (f) {
+                const g = normalizeGeometry(f.geometry);
+                if (!g || (g.type !== 'Polygon' && g.type !== 'MultiPolygon')) return;
+                const bbox = geomBbox(g);
+                // lewati poligon latar raksasa (artefak dissolve)
+                if ((bbox.maxLng - bbox.minLng) > RASTER_MAX_SPAN_DEG || (bbox.maxLat - bbox.minLat) > RASTER_MAX_SPAN_DEG) return;
+                const area = geomAreaKm2(g) * 100;
+                const props = f.properties || {};
+                const count = Number(props.count != null ? props.count : props.classifica) || 0;
+                features.push({ geom: g, bbox: bbox, area: area, count: count });
+                totalCount += count;
+                totalArea += area;
+            });
+            // Skala warna tidak boleh didominasi segelintir nilai count ekstrem
+            // (sebagian besar sel ber-count kecil, outlier bisa ~200 juta). Pakai
+            // persentil tinggi sebagai nilai maksimum agar semua sel tetap berwarna.
+            const sorted = features.map(function (f) { return f.count; }).sort(function (a, b) { return a - b; });
+            const p95 = sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] : 1;
+            rasterMaxCount = Math.max(1, p95);
+            return { features: features, summary: { sel: features.length, count: totalCount, areaHa: totalArea } };
+        }
+
+        function rasterColor(count) {
+            const t = Math.min(1, Math.sqrt((count || 0) / rasterMaxCount));
+            const c0 = [234, 214, 200], c1 = [163, 78, 42];
+            const r = Math.round(c0[0] + (c1[0] - c0[0]) * t);
+            const g = Math.round(c0[1] + (c1[1] - c0[1]) * t);
+            const b = Math.round(c0[2] + (c1[2] - c0[2]) * t);
+            return 'rgb(' + r + ',' + g + ',' + b + ')';
+        }
+
+        function rasterPopup(p) {
+            p = p || {};
+            // Fallback klasifikasi: utamakan field classification; bila ada
+            // kode kelas (cls) gunakan nama dari konfigurasi; terakhir 'Permukiman'.
+            const cls = p.classification
+                || (CFG.classifications && CFG.classifications[p.cls] ? CFG.classifications[p.cls].name : null)
+                || 'Permukiman';
+            const area = (p.area != null && !isNaN(Number(p.area))) ? Number(p.area) : null;
+            const count = (p.count != null && !isNaN(Number(p.count))) ? Number(p.count) : 0;
+            return '<strong>Sel Permukiman</strong><br>'
+                + 'Klasifikasi: ' + escapeHtml(fixEncoding(cls))
+                + '<br>Count: ' + fmtInt.format(count)
+                + (area != null ? '<br>Luas: ' + fmtDec.format(area) + ' Ha' : '<br>Luas: -');
+        }
+
+        // Titik pusat (centroid) sel permukiman; dipakai untuk menggambar sel kecil
+        // sebagai CircleMarker agar tetap terlihat pada zoom rendah. Koordinat tetap
+        // urutan asli GeoJSON [lng, lat].
+        function cellCentroid(g) {
+            if (!g) return null;
+            let best = null, bestArea = -1;
+            eachSubPolygon(g, function (poly) {
+                if (!poly || !poly.length) return;
+                const a = polyAreaKm2(poly);
+                if (a > bestArea) { bestArea = a; best = poly[0]; }
+            });
+            return best ? ringCentroid(best) : null;
+        }
+
+        function rebuildRasterLayer() {
+            overlays.permukiman.clearLayers();
+            rasterLayer = null;
+            const year = currentRasterYear();
+            const r = rasterCache.get(rasterKey(year));
+            if (!r) { renderRasterCard(); return; }
+            const feats = [];
+            // Filter sel permukiman (GeoJSON raster) ke wilayah terpilih agar peta
+            // hanya menampilkan data di kabupaten/kecamatan/desa yang sedang dipilih.
+            const regionGeo = selectedRegionGeometry();
+            const regionBB = regionGeo ? geomBbox(regionGeo) : null;
+            r.features.forEach(function (f) {
+                if (regionGeo) {
+                    const c = cellCentroid(f.geom);
+                    let keep = false;
+                    if (f.bbox && regionBB) {
+                        // Tolak cepat berdasarkan tumpang-tindih bbox.
+                        if (f.bbox.maxLng < regionBB.minLng || f.bbox.minLng > regionBB.maxLng ||
+                            f.bbox.maxLat < regionBB.minLat || f.bbox.minLat > regionBB.maxLat) {
+                            keep = false;
+                        } else {
+                            keep = c ? geomContains(regionGeo, c[0], c[1]) : true;
+                        }
+                    } else {
+                        keep = c ? geomContains(regionGeo, c[0], c[1]) : true;
+                    }
+                    if (!keep) return;
+                }
+                const props = { count: f.count, area: f.area };
+                // Sel yang berukuran lebih kecil dari beberapa piksel pada zoom aktif
+                // digambar sebagai titik agar tampil di seluruh Bengkulu (bukan hanya
+                // wilayah dengan sel yang lebih besar seperti Enggano).
+                if (map && f.bbox) {
+                    const p1 = map.latLngToContainerPoint([f.bbox.minLat, f.bbox.minLng]);
+                    const p2 = map.latLngToContainerPoint([f.bbox.maxLat, f.bbox.maxLng]);
+                    const sizePx = Math.max(Math.abs(p2.x - p1.x), Math.abs(p2.y - p1.y));
+                    if (sizePx < RASTER_MIN_PX) {
+                        const c = cellCentroid(f.geom);
+                        if (c) {
+                            feats.push({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [c[0], c[1]] } });
+                            return;
+                        }
+                    }
+                }
+                feats.push({ type: 'Feature', properties: props, geometry: f.geom });
+            });
+            rasterLayer = L.geoJSON({ type: 'FeatureCollection', features: feats }, {
+                pointToLayer: function (feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        radius: 0.8,            // Ukuran mikro ultra-halus
+                        stroke: false,          // MATIKAN garis tepi agar tidak menumpuk tebal
+                        fillColor: '#4A3B32',   // Cokelat Manis
+                        fillOpacity: 0.6        // Transparansi agar sebaran titik terlihat alami
+                    });
+                },
+                style: function (feature) {
+                    return {
+                        stroke: false,          // MATIKAN border polygon
+                        fillColor: '#4A3B32',
+                        fillOpacity: 0.6
+                    };
+                },
+                onEachFeature: function (feature, layer) { layer.bindPopup(rasterPopup(feature.properties)); },
+            });
+            rasterLayer.addTo(overlays.permukiman);
+            renderRasterCard();
+        }
+
+        function fitRasterBounds() {
+            if (!map || rasterBoundsFitted) return;
+            const year = currentRasterYear();
+            const r = rasterCache.get(rasterKey(year));
+            if (!r || !r.features.length) return;
+            const bounds = L.latLngBounds([]);
+            r.features.forEach(function (f) {
+                if (!f.bbox) return;
+                bounds.extend([f.bbox.minLat, f.bbox.minLng]);
+                bounds.extend([f.bbox.maxLat, f.bbox.maxLng]);
+            });
+            if (bounds.isValid()) {
+                rasterBoundsFitted = true;
+                map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+            }
+        }
+
+        // preserveView=true → jangan reset view/fitBounds (kamera tetap pada
+        // center & zoom aktif) saat pengguna hanya mengganti filter 'Tahun'.
+        // File raster penuh per tahun dimuat sekali lalu di-cache per lingkup
+        // wilayah; pemfilteran kabupaten/kecamatan/desa dilakukan di browser.
+        function loadRaster(preserveView) {
+            const year = currentRasterYear();
+            if (!preserveView) rasterBoundsFitted = false;
+            overlays.permukiman.clearLayers();
+            rasterLayer = null;
+            if (year === null || CFG.fileYears.indexOf(year) === -1) { renderRasterCard(); return; }
+            const cacheKey = rasterKey(year);
+            if (rasterCache.has(cacheKey)) { rebuildRasterLayer(); if (!preserveView) fitRasterBounds(); return; }
+
+            // Selalu muat file raster penuh per tahun; pemfilteran wilayah
+            // (kabupaten/kecamatan/desa) dilakukan di browser via point-in-polygon
+            // pada rebuildRasterLayer(). Endpoint chunked tidak dipakai untuk layer
+            // ini karena file raster tidak memiliki atribut wilayah (hanya
+            // class/count) sehingga filter nama di server selalu kosong.
+            const url = CFG.endpoints.raster.replace('{year}', year);
+
+            loading(true);
+            renderRasterCard();
+            fetchJSON(url)
+                .then(function (fc) {
+                    const features = (fc && fc.type === 'FeatureCollection' ? fc.features : (fc && fc.type === 'Feature' ? [fc] : []));
+                    const normalized = { type: 'FeatureCollection', features: features.map(function (f) {
+                        return f && f.geometry ? { type: 'Feature', properties: f.properties || {}, geometry: normalizeGeometry(f.geometry) } : f;
+                    })};
+                    rasterCache.set(cacheKey, prepareRaster(normalized));
+                    rebuildRasterLayer();
+                    if (!preserveView) fitRasterBounds();
+                })
+                .catch(function () {
+                    if (els.rasterStats) els.rasterStats.innerHTML = '<p class="text-xs text-red-500">Gagal memuat file raster.</p>';
+                })
+                .finally(function () { loading(false); });
+        }
+
+
+        // ---------- statistik raster per wilayah (dihitung dari file GeoJSON) ----------
+        function regionRasterStats() {
+            const year = currentRasterYear();
+            if (year === null || CFG.fileYears.indexOf(year) === -1) return null;
+            const r = rasterCache.get(rasterKey(year));
+            if (!r || !state.areaId) return null;
+            // Tingkat provinsi = seluruh file (menghindari PIP pada geometri provinsi yang besar).
+            if (state.level === 'provinsi') return r.summary;
+            const cacheKey = year + ':' + state.areaId;
+            if (regionCache.has(cacheKey)) return regionCache.get(cacheKey);
+            const entry = featureIndex.get(state.areaId);
+            const bg = entry ? entry.feature.geometry : null;
+            if (!bg) return r.summary;
+            const bb = geomBbox(bg);
+            let sel = 0, count = 0, area = 0;
+            r.features.forEach(function (f) {
+                if (f.bbox.maxLng < bb.minLng || f.bbox.minLng > bb.maxLng || f.bbox.maxLat < bb.minLat || f.bbox.minLat > bb.maxLat) return;
+                eachSubPolygon(f.geom, function (poly) {
+                    const c = ringCentroid(poly[0]);
+                    if (!geomContains(bg, c[0], c[1])) return;
+                    const a = polyAreaKm2(poly) * 100;
+                    area += a;
+                    sel++;
+                    count += f.count * (f.area > 0 ? a / f.area : 1);
+                });
+            });
+            const res = { sel: sel, count: Math.round(count), areaHa: area };
+            regionCache.set(cacheKey, res);
+            return res;
+        }
+
+        function renderRasterCard() {
+            if (!els.rasterFile || !els.rasterStats) return;
+            const year = currentRasterYear();
+            if (year === null) {
+                els.rasterFile.textContent = '—';
+                els.rasterStats.innerHTML = '<p>Tidak ada file raster.</p>';
+                return;
+            }
+            els.rasterFile.textContent = 'data_' + year + '.geojson';
+            if (CFG.fileYears.indexOf(year) === -1) {
+                els.rasterStats.innerHTML = '<p>File raster untuk tahun ' + year + ' tidak tersedia.</p>';
+                return;
+            }
+            if (!rasterCache.has(rasterKey(year))) {
+                els.rasterStats.innerHTML = '<p>Memuat raster…</p>';
+                return;
+            }
+            const reg = regionRasterStats();
+            const r = rasterCache.get(rasterKey(year));
+            const rows = [];
+            rows.push('<div class="flex items-center justify-between"><span>Sel permukiman (wilayah ini)</span><strong class="text-denah-ink">' + fmtInt.format(reg ? reg.sel : 0) + '</strong></div>');
+            rows.push('<div class="flex items-center justify-between"><span>Total count (wilayah ini)</span><strong class="text-denah-ink">' + fmtInt.format(reg ? reg.count : 0) + '</strong></div>');
+            rows.push('<div class="flex items-center justify-between"><span>Luas raster (wilayah ini)</span><strong class="text-denah-ink">' + fmtDec.format(reg ? reg.areaHa : 0) + ' Ha</strong></div>');
+            rows.push('<p class="pt-1 border-t border-denah-terracotta/15 text-[11px]">Seluruh file: ' + fmtInt.format(r.summary.sel) + ' sel · ' + fmtDec.format(r.summary.areaHa) + ' Ha</p>');
+            els.rasterStats.innerHTML = rows.join('');
+        }
+
+
+        // ---------- panel statistik kanan (real-time per wilayah terpilih) ----------
+        function statsParams() {
+            const p = new URLSearchParams();
+            const nameOf = function (id) {
+                const e = featureIndex.get(id);
+                return e ? displayName(e.feature) : null;
+            };
+            if (state.villageId) {
+                const rn = nameOf(state.regencyId), dn = nameOf(state.districtId), vn = nameOf(state.villageId);
+                if (rn) p.set('regency', rn);
+                if (dn) p.set('district', dn);
+                if (vn) p.set('village', vn);
+            } else if (state.districtId) {
+                const rn = nameOf(state.regencyId), dn = nameOf(state.districtId);
+                if (rn) p.set('regency', rn);
+                if (dn) p.set('district', dn);
+            } else if (state.regencyId) {
+                const rn = nameOf(state.regencyId);
+                if (rn) p.set('regency', rn);
+            }
+            return p;
+        }
+
+        function updateStats() {
+            renderStatsHeader();
+            const base = statsParams();
+            const jobs = [fetchJSON(CFG.endpoints.stats + '?' + base.toString())];
+            if (state.year) {
+                const py = new URLSearchParams(base);
+                py.set('year', state.year);
+                jobs.push(fetchJSON(CFG.endpoints.stats + '?' + py.toString()));
+            }
+            Promise.all(jobs)
+                .then(function (res) { renderStats(res[0], res.length > 1 ? res[1] : null); })
+                .catch(function () {
+                    const canvas = document.getElementById('chart-year-peta');
+                    const emptyEl = document.getElementById('stats-by-year-empty');
+                    if (emptyEl) {
+                        emptyEl.textContent = 'Gagal memuat statistik.';
+                        emptyEl.classList.remove('hidden');
+                        if (canvas) canvas.style.display = 'none';
+                    }
+                });
+        }
+
+        function renderStatsHeader() {
+            const entry = state.areaId ? featureIndex.get(state.areaId) : null;
+            els.statsLevel.textContent = LEVEL_LABEL[state.level] || 'Provinsi';
+            if (!entry) {
+                els.statsName.textContent = CFG.province ? fixEncoding(CFG.province.name) : 'Provinsi';
+                els.statsPath.textContent = 'Seluruh wilayah';
+                return;
+            }
+            els.statsName.textContent = entry.feature.properties.name ? displayName(entry.feature) : 'Provinsi';
+            const parts = [];
+            let e = entry, guard = 0;
+            while (e && guard < 4) {
+                parts.unshift(e.feature.properties.name ? displayName(e.feature) : '');
+                e = e.feature.properties.parent_id ? featureIndex.get(e.feature.properties.parent_id) : null;
+                guard++;
+            }
+            els.statsPath.textContent = parts.join(', ');
+        }
+
+        function renderStats(all, yr) {
+            const t = (yr || all).totals || {};
+            els.statTotalLokasi.textContent = fmtInt.format(t.total_locations || 0);
+            els.statTotalRecords.textContent = fmtInt.format(t.total_records || 0) + ' record';
+            els.statTotalLuas.textContent = fmtDec.format(t.total_area_ha || 0);
+            els.statYearLabel.textContent = state.year ? String(state.year) : 'Semua Tahun';
+            renderChange(all.by_year || []);
+            renderByYear(all.by_year || []);
+            renderRasterCard();
+        }
+
+        function renderChange(byYear) {
+            if (!byYear.length) {
+                els.statChange.innerHTML = '<p class="text-xs text-denah-ink-muted">Belum ada data tahunan.</p>';
+                return;
+            }
+            const years = byYear.map(function (r) { return r.year; }).sort(function (a, b) { return a - b; });
+            const cur = state.year || years[years.length - 1];
+            const prev = years.slice().reverse().find(function (y) { return y < cur; });
+            const curRow = byYear.find(function (r) { return r.year === cur; });
+            const prevRow = prev != null ? byYear.find(function (r) { return r.year === prev; }) : null;
+            if (!curRow || !prevRow) {
+                els.statChange.innerHTML = '<p class="text-xs text-denah-ink-muted">Belum ada data pembanding tahun sebelumnya.</p>';
+                return;
+            }
+            const delta = (curRow.total_area_ha || 0) - (prevRow.total_area_ha || 0);
+            const pct = prevRow.total_area_ha ? (delta / prevRow.total_area_ha) * 100 : 0;
+            const up = delta >= 0;
+            els.statChange.innerHTML =
+                '<div class="flex items-center justify-between rounded-lg bg-denah-cream-bg px-3 py-2">'
+                + '<span class="text-xs text-denah-ink-muted">vs ' + prevRow.year + '</span>'
+                + '<span class="text-sm font-bold ' + (up ? '▲ ' : '▼ ') + '">'
+                + (up ? '▲ ' : '▼ ') + fmtDec.format(delta) + ' Ha'
+                + ' <span class="font-medium">(' + (pct >= 0 ? '+' : '') + fmtDec.format(pct) + '%)</span>'
+                + '</span></div>';
+        }
+
+
+        function renderByYear(rows) {
+            const canvas = document.getElementById('chart-year-peta');
+            const emptyEl = document.getElementById('stats-by-year-empty');
+            if (!canvas) return;
+
+            const showEmpty = function (show) {
+                if (canvas) canvas.style.display = show ? 'none' : '';
+                if (emptyEl) emptyEl.classList.toggle('hidden', !show);
+            };
+
+            // Fallback bila Chart.js belum termuat.
+            if (typeof Chart === 'undefined') {
+                if (emptyEl) { emptyEl.textContent = 'Chart belum termuat.'; showEmpty(true); }
+                return;
+            }
+
+            if (!rows.length) {
+                if (yearPetaChart) { yearPetaChart.destroy(); yearPetaChart = null; }
+                showEmpty(true);
+                return;
+            }
+
+            const labels = rows.map(function (r) { return r.year; });
+            const values = rows.map(function (r) { return Math.round((r.total_area_ha || 0) * 100) / 100; });
+            const active = state.year || null;
+
+            // Palet "Earthy DENAH": terracotta pekat untuk tahun aktif,
+            // terracotta muda (krem-cokelat) untuk tahun lainnya.
+            const backgroundColor = labels.map(function (y) {
+                return active && y === active ? '#C6653C' : '#D9A287';
+            });
+            const borderColor = labels.map(function (y) {
+                return active && y === active ? '#9E4E2C' : '#C9A083';
+            });
+
+            const data = {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Luas (Ha)',
+                    data: values,
+                    backgroundColor: backgroundColor,
+                    borderColor: borderColor,
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    maxBarThickness: 34,
+                }]
+            };
+
+            showEmpty(false);
+
+            if (yearPetaChart) {
+                yearPetaChart.data = data;
+                yearPetaChart.update();
+                return;
+            }
+
+            yearPetaChart = new Chart(canvas, {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) { return fmtDec.format(ctx.parsed.y || 0) + ' Ha'; }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Tahun', color: '#4B5563', font: { size: 11, weight: '600' } },
+                            ticks: { color: '#1A1A1A', font: { size: 11 } },
+                            grid: { display: false },
+                            border: { color: '#E7E0D5' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Luas (Ha)', color: '#4B5563', font: { size: 11, weight: '600' } },
+                            ticks: { color: '#4B5563', font: { size: 10 }, callback: function (v) { return fmtDec.format(v); } },
+                            grid: { color: '#EFE9DF' },
+                            border: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+
+
+function bindUi() {
+            els.filterKabupaten.addEventListener('change', function () {
+                filterUpdated = true;
+                const v = els.filterKabupaten.value;
+                if (v) applySelection('kabupaten', v); else resetWilayah();
+            });
+            els.filterKecamatan.addEventListener('change', function () {
+                filterUpdated = true;
+                const v = els.filterKecamatan.value;
+                if (v) applySelection('kecamatan', v);
+                else if (state.regencyId) applySelection('kabupaten', state.regencyId);
+                else resetWilayah();
+            });
+            els.filterDesa.addEventListener('change', function () {
+                filterUpdated = true;
+                const v = els.filterDesa.value;
+                if (v) applySelection('desa', v);
+                else if (state.districtId) applySelection('kecamatan', state.districtId);
+                else if (state.regencyId) applySelection('kabupaten', state.regencyId);
+                else resetWilayah();
+            });
+            els.filterTahun.addEventListener('change', function () {
+                state.year = numOrNull(els.filterTahun.value);
+                // Pertahankan posisi kamera (center & zoom) saat berganti tahun.
+                loadRaster(true);
+                updateStats();
+            });
+
+            const resetWilayah = function () { filterUpdated = true; applySelection('provinsi', PROVINCE_ID); };
+            if (els.btnResetWilayah) els.btnResetWilayah.addEventListener('click', resetWilayah);
+            if (els.btnResetStats) els.btnResetStats.addEventListener('click', resetWilayah);
+            document.querySelectorAll('[data-overlay]').forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    if (!map) return;
+                    const name = cb.dataset.overlay;
+                    if (name === 'batas') {
+                        const g = overlays.desa;
+                        if (!g) return;
+                        if (cb.checked) g.addTo(map); else map.removeLayer(g);
+                        return;
+                    }
+                    const group = overlays[name];
+                    if (!group) return;
+                    if (cb.checked) group.addTo(map); else map.removeLayer(group);
+                });
+            });
+        }
+
+        // ---------- init ----------
+        // Muat batas_wilayah.json SAAT PALING PERTAMA (di-cache oleh fetchJSON),
+        // bangun index hierarki, layer batas, lalu isi dropdown + statistik provinsi.
+        function init() {
+            if (!ensureMap()) return;
+            bindUi();
+            loading(true);
+            let initFailed = false;
+
+            fetchJSON('/data/batas_wilayah.json')
+                .then(function (fc) {
+                    batasFC = fc;
+                    if (!batasBuilt) { buildBatasIndex(fc); batasBuilt = true; }
+                    rebuildKabupatenOptions();
+                    addBaseBatasLayer();
+                    // Provinsi dipilih awal: fitBounds lalu statistik seluruh wilayah.
+                    state.level = 'provinsi';
+                    state.areaId = PROVINCE_ID;
+                    state.regencyId = state.districtId = state.villageId = null;
+                    syncDropdowns();
+                    filterUpdated = true;
+                    zoomToSelection();
+                    renderTerritoryHighlight();
+                    updateStats();
+                    loading(false);
+                })
+                .catch(function () { initFailed = true; loading(false); })
+                .finally(function () {
+                    if (initFailed && els.denahMapLoading) {
+                        els.denahMapLoading.classList.add('flex');
+                        els.denahMapLoading.classList.remove('hidden');
+                        els.denahMapLoading.innerHTML = '<span class="rounded-full bg-red-600/90 px-4 py-1.5 text-xs font-medium text-white shadow-lg">Gagal memuat batas wilayah dari server.</span>';
+                    }
+                });
+
+            // Raster file + statistik per-wilayah dimuat lazy (deferred) agar first paint cepat.
+            setTimeout(function () { loadRaster(); }, 300);
+            setTimeout(function () { if (map) map.invalidateSize(); }, 120);
+        }
+
+        document.addEventListener('livewire:navigated', function () {
+            if (map) setTimeout(function () { map.invalidateSize(); }, 120);
+        });
+
+        // Defer inisialisasi peta sampai setelah first paint agar tidak memblokir render utama.
+        function startMap() {
+            if (document.getElementById('denah-map')) init();
+        }
+        if (document.readyState === 'complete') {
+            startMap();
+        } else {
+            window.addEventListener('load', function onLoad() {
+                window.removeEventListener('load', onLoad);
+                startMap();
+            });
+        }
+    })();
+</script>
+@endscript
+
+</div>
+

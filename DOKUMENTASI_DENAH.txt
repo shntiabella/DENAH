@@ -1,0 +1,328 @@
+Dokumentasi Aplikasi DENAH
+Versi dokumentasi: 2026-08-20
+
+1. Ringkasan Singkat
+
+DENAH adalah aplikasi web pemetaan dan statistik permukiman. Secara sederhana, 
+aplikasi ini dipakai untuk melihat persebaran permukiman dalam bentuk peta interaktif, 
+membaca angka-angka statistiknya, dan mengelola seluruh konten melalui panel admin.
+
+Aplikasi ini dibuat dengan konsep WebGIS, yaitu sistem informasi geografis berbasis web. 
+Artinya, pengguna bisa melihat data wilayah di peta, memilih filter wilayah dan tahun, 
+lalu mendapatkan ringkasan data dengan lebih mudah.
+
+Secara garis besar, DENAH berisi:
+- Halaman publik untuk masyarakat umum.
+- Halaman peta interaktif.
+- Halaman statistik.
+- Halaman tentang dan metodologi.
+- Panel admin/CMS untuk mengelola konten dan data.
+
+2. Apa Itu Aplikasi Ini?
+
+Kalau dijelaskan untuk orang awam, DENAH adalah website yang membantu pengguna menjawab pertanyaan seperti:
+- Permukiman ada di mana saja?
+- Luas total permukiman berapa?
+- Persebaran permukiman di tahun tertentu seperti apa?
+- Wilayah mana yang paling banyak data permukimannya?
+- Data ini berasal dari proses pemetaan yang bagaimana?
+
+Jadi, DENAH bukan sekadar website informasi biasa. Ini adalah gabungan antara:
+- peta digital,
+- data statistik,
+- dan sistem administrasi untuk mengelola konten.
+
+3. Tujuan Aplikasi
+
+Tujuan utama DENAH adalah menyajikan informasi permukiman secara visual, rapi, dan mudah dipahami. Aplikasi ini membantu:
+- pengguna umum untuk melihat informasi permukiman,
+- peneliti atau analis untuk membaca tren data,
+- dan admin untuk mengelola isi website serta data yang ditampilkan.
+
+4. Fitur Utama
+
+4.1. Peta Interaktif
+
+Fitur paling utama di DENAH adalah peta interaktif. Pengguna dapat:
+- melihat wilayah permukiman di peta,
+- memilih tahun data,
+- memilih wilayah administrasi seperti provinsi, kabupaten/kota, kecamatan, dan desa,
+- melihat detail data wilayah tertentu,
+- melihat warna legenda klasifikasi permukiman.
+
+4.2. Statistik
+
+Halaman statistik menampilkan angka-angka penting, misalnya:
+- total luas permukiman,
+- jumlah wilayah yang terpetakan,
+- jumlah dataset spasial,
+- tahun pemetaan terbaru,
+- rekap per tahun,
+- rekap per wilayah.
+
+4.3. Halaman Tentang
+
+Halaman ini menjelaskan gambaran umum aplikasi DENAH, termasuk ringkasan data dan konteks penggunaannya.
+
+4.4. Halaman Metodologi
+
+Halaman metodologi berisi penjelasan bagaimana data permukiman dibuat atau dipetakan.
+ Dari kode seed data, metodologi yang dipakai menjelaskan alur berbasis:
+- citra satelit Sentinel-2,
+- pra-pemrosesan data,
+- penentuan sampel,
+- klasifikasi Random Forest,
+- hasil raster klasifikasi,
+- ekspor dan pengolahan data,
+- lalu ditampilkan di WebGIS dan statistik.
+
+4.5. Panel Admin / CMS
+
+Admin dapat mengelola:
+- hero/beranda,
+- halaman about/tentang,
+- fitur utama,
+- data statistik,
+- data permukiman,
+- wilayah administratif,
+- halaman metodologi,
+- footer dan kontak,
+- media library,
+- pengguna,
+- pengaturan umum,
+- import data.
+
+5. Halaman-Halaman yang Ada
+
+5.1. Halaman Publik
+
+Halaman publik yang terlihat oleh pengunjung:
+- `/` = beranda
+- `/peta` = peta dan data
+- `/statistik` = statistik
+- `/tentang` = tentang aplikasi
+- `/metodologi` = metodologi pemetaan
+- `/tim` = saat ini placeholder
+- `/aktivitas` = saat ini placeholder
+- `/faq` = saat ini placeholder
+
+5.2. Halaman Admin
+
+Panel admin menggunakan prefix `/admin` dan berisi:
+- dashboard admin,
+- pengelolaan hero,
+- about,
+- statistik,
+- fitur,
+- settlement areas,
+- areas,
+- statistik admin,
+- import data,
+- methodology,
+- footer,
+- users,
+- media,
+- settings.
+
+6. Bagaimana Aplikasi Ini Bekerja?
+
+DENAH bekerja dengan menggabungkan data dari database dan file GeoJSON.
+
+Alur sederhananya:
+1. Data wilayah administratif disimpan di database.
+2. Data permukiman disimpan di database dan juga tersedia dalam bentuk GeoJSON.
+3. Halaman peta dan statistik mengambil data dari API.
+4. Data yang sering dipakai disimpan sementara di cache agar aplikasi lebih cepat.
+5. Admin bisa memperbarui isi website dan data.
+
+Dengan cara ini, pengguna tidak perlu membuka file data manual. Semua sudah disajikan dalam bentuk yang mudah dipahami.
+
+7. Sumber Data
+
+Kode project menunjukkan bahwa DENAH memakai beberapa jenis data:
+
+- Data GeoJSON di folder `public/data/`
+  - Contohnya: `data_2021.geojson`, `data_2022.geojson`, `data_2023.geojson`, `data_2024.geojson`, `data_2025.geojson`
+- Data wilayah administrasi
+  - provinsi
+  - kabupaten/kota
+  - kecamatan
+  - desa/kelurahan
+- Data permukiman di database
+- Metadata konten website seperti hero, about, fitur, metodologi, dan footer
+
+8. Struktur Data yang Penting
+
+8.1. Settlement Area
+
+Tabel `settlement_areas` berisi data inti permukiman, seperti:
+- nama wilayah,
+- tahun,
+- provinsi,
+- kabupaten/kota,
+- kecamatan,
+- desa,
+- jumlah lokasi permukiman,
+- luas area,
+- file GeoJSON,
+- data GeoJSON,
+- status publikasi,
+- deskripsi,
+- pengguna yang memperbarui data.
+
+8.2. Administrative Area
+
+Tabel `administrative_areas` berisi data wilayah administrasi:
+- provinsi,
+- kabupaten/kota,
+- kecamatan,
+- desa/kelurahan.
+
+Data ini dipakai untuk filter wilayah dan tampilan peta.
+
+8.3. Konten Website
+
+Konten halaman seperti:
+- hero,
+- about,
+- metodologi,
+- fitur,
+- stat,
+- footer,
+- social link,
+- setting,
+disimpan di database supaya bisa diubah dari admin tanpa edit kode.
+
+9. API yang Dipakai
+
+DENAH menyediakan API publik untuk kebutuhan peta dan statistik.
+
+Endpoint utama yang terlihat dari kode:
+- `/api/settlement-areas`
+- `/api/settlement-areas/{id}`
+- `/api/settlement-stats`
+- `/api/settlement-geojson-chunk`
+- `/api/administrative-areas/{level}`
+- `/api/administrative-areas/{level}/{area}`
+- `/api/get-kecamatan`
+- `/api/get-desa`
+- `/api/get-statistics`
+
+Fungsi endpoint tersebut:
+- mengambil data peta permukiman,
+- mengambil statistik ringkas,
+- mengambil GeoJSON bertahap agar lebih ringan,
+- mengambil batas wilayah administratif,
+- mengambil data filter wilayah.
+
+10. Fitur Bahasa
+
+Aplikasi ini mendukung pergantian bahasa:
+- Bahasa Indonesia
+- Bahasa Inggris
+
+Perubahan bahasa disimpan ke session dan cookie supaya pilihan pengguna tetap diingat.
+
+11. Teknologi yang Dipakai
+
+Dari file project, teknologi utamanya adalah:
+- PHP 8.3
+- Laravel 13
+- Livewire 3
+- Volt
+- Blade template
+- Vite
+- Tailwind CSS
+
+Untuk kebutuhan pengembangan dan pengujian, project ini juga memakai:
+- PHPUnit / Pest
+- PHPStan
+- Laravel Pint
+
+12. Kelebihan Aplikasi
+
+Beberapa kelebihan DENAH berdasarkan struktur kodenya:
+- data ditampilkan secara visual di peta,
+- statistik dihitung otomatis dari database,
+- data yang sering dipakai di-cache agar lebih cepat,
+- ada panel admin untuk kelola konten,
+- mendukung bahasa Indonesia dan Inggris,
+- memakai GeoJSON sehingga cocok untuk data spasial.
+
+13. Cara Singkat Memakai Aplikasi
+
+Untuk pengguna umum:
+1. Buka halaman beranda.
+2. Pilih menu peta atau statistik.
+3. Gunakan filter tahun dan wilayah.
+4. Klik area tertentu di peta untuk melihat detail.
+5. Baca ringkasan angka pada halaman statistik.
+
+Untuk admin:
+1. Masuk ke `/admin/login`.
+2. Login dengan akun admin.
+3. Buka dashboard admin.
+4. Kelola data atau konten yang ingin diperbarui.
+
+14. Cara Kerja Data Peta
+
+Pada halaman peta, aplikasi menyiapkan konfigurasi awal dari database dan file GeoJSON.
+
+Lalu data ditampilkan lewat JavaScript di sisi browser. File GeoJSON dipakai sebagai dasar geometrinya, sedangkan database dipakai untuk:
+- informasi wilayah,
+- statistik,
+- status publikasi,
+- dan metadata lain.
+
+Hal ini membuat peta bisa tampil lebih interaktif dan responsif.
+
+15. Catatan Tentang Data Statistik
+
+Ada satu kelas penting bernama `SettlementStatistics` yang menjadi sumber utama perhitungan angka.
+
+Fungsinya:
+- menghitung total lokasi permukiman,
+- menghitung total luas area,
+- menghitung jumlah record,
+- menghitung total per tahun,
+- menghitung total per kabupaten,
+- membuat peringkat wilayah,
+- dan menghitung perubahan antar tahun.
+
+Artinya, angka di halaman publik dan admin tidak dihitung manual, tetapi ditarik langsung dari data sumber.
+
+16. Catatan Tentang Pengolahan GeoJSON
+
+Project ini juga memiliki utilitas untuk:
+- memvalidasi struktur GeoJSON,
+- membaca file GeoJSON besar secara bertahap,
+- menghitung luas area dari geometri,
+- memeriksa koordinat apakah masih wajar untuk wilayah Indonesia.
+
+Ini penting karena data peta bisa berukuran besar dan harus dijaga agar tidak memberatkan server.
+
+17. Fitur Admin yang Menonjol
+
+Admin DENAH tidak hanya mengubah teks halaman, tetapi juga mengelola data penting seperti:
+- data permukiman,
+- data wilayah,
+- media,
+- dan pengaturan tampilan publik.
+
+Ada juga modul import data, yang mengindikasikan aplikasi ini memang dirancang untuk menerima pembaruan data secara berkala.
+
+18. Kesimpulan
+
+DENAH adalah aplikasi web pemetaan permukiman berbasis Laravel dan Livewire yang menyajikan:
+- peta interaktif,
+- statistik,
+- informasi metodologi,
+- serta CMS admin untuk pengelolaan konten dan data.
+
+Untuk orang awam, paling mudah memahami DENAH sebagai:
+"website peta permukiman yang bisa menampilkan lokasi, luas, statistik, dan informasi pendukungnya secara rapi dan interaktif."
+
+19. Ringkasan Singkat dalam Satu Paragraf
+
+DENAH adalah aplikasi web pemetaan permukiman yang digunakan untuk menampilkan persebaran permukiman dalam bentuk peta interaktif, menyajikan statistik data, menjelaskan metodologi pemetaan, dan menyediakan panel admin untuk mengelola konten serta data wilayah. Aplikasi ini mendukung filter tahun dan wilayah, memakai data GeoJSON dan database, serta dapat digunakan dalam bahasa Indonesia dan Inggris.
+

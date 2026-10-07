@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DENAH — Digital Ecosystem & Navigation for Area Housing</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            background: #2C1810;
+            color: #FFFDF7;
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+        a { color: inherit; text-decoration: none; }
+        ul, ol { list-style: none; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+        .accent-line { display: inline-block; width: 48px; height: 3px; background: #C0623E; border-radius: 2px; margin-bottom: 16px; }
+        .accent-line.center { display: block; margin: 0 auto 16px auto; }
+        .section-label { display: inline-block; font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #D4946A; margin-bottom: 8px; }
+        .section-title { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; color: #FFFDF7; margin-bottom: 12px; }
+        .section-desc { font-size: 1.05rem; color: #C4B5A5; line-height: 1.85; max-width: 700px; }
+/* BUTTONS */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 32px; border-radius: 50px; font-weight: 700; font-size: 0.95rem; transition: all 0.3s ease; cursor: pointer; border: 2px solid transparent; }
+        .btn-primary { background: #C0623E; color: #FFFFFF; box-shadow: 0 4px 16px rgba(192,98,62,0.35); }
+        .btn-primary:hover { background: #A35234; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(192,98,62,0.5); }
+        .btn-outline { background: transparent; color: #C0623E; border-color: #C0623E; }
+        .btn-outline:hover { background: #C0623E; color: #FFFFFF; }
+        .btn-ghost { background: transparent; color: #FFFDF7; border-color: rgba(255,253,247,0.25); }
+        .btn-ghost:hover { border-color: #C0623E; color: #C0623E; }
+        .btn-sm { padding: 10px 22px; font-size: 0.85rem; }
+        .btn-lg { padding: 16px 40px; font-size: 1rem; }
+        /* NAVBAR */
+        .navbar { position: sticky; top: 0; z-index: 1000; background: rgba(44,24,16,0.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255,253,247,0.08); padding: 16px 0; }
+        .navbar .container { display: flex; align-items: center; justify-content: space-between; }
+        .navbar-logo { display: flex; align-items: center; gap: 10px; font-size: 1.5rem; font-weight: 900; color: #FFFDF7; letter-spacing: 1px; }
+        .navbar-logo .logo-icon { width: 40px; height: 40px; background: #C0623E; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 1.1rem; font-weight: 800; }
+        .navbar-nav { display: flex; align-items: center; gap: 32px; }
+        .navbar-nav a { font-size: 0.9rem; font-weight: 600; color: #C4B5A5; transition: color 0.2s; position: relative; padding-bottom: 4px; }
+        .navbar-nav a:hover, .navbar-nav a.active { color: #D4946A; }
+        .navbar-nav a.active::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 2px; background: #C0623E; border-radius: 1px; }
+        .lang-switch { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: #C4B5A5; }
+        .lang-switch span { cursor: pointer; padding: 4px 10px; border-radius: 20px; transition: all 0.2s; }
+        .lang-switch span.active { background: #C0623E; color: #FFFFFF; }
+        .lang-switch .sep { color: #6B5C4E; cursor: default; padding: 0; }
+        .menu-toggle { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 8px; }
+        .menu-toggle span { display: block; width: 26px; height: 2.5px; background: #FFFDF7; border-radius: 2px; transition: 0.3s; }
+/* HERO — SPLIT TWO-COLUMN CARD */
+        .hero { padding: 60px 0 80px 0; }
+        .hero .container { display: flex; align-items: stretch; gap: 40px; }
+        .hero-card-left { flex: 1 1 55%; background: #FFFDF7; border-radius: 24px; padding: 48px 44px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 12px 48px rgba(0,0,0,0.35); border: 1px solid rgba(192,98,62,0.12); }
+        .hero-tag { display: inline-block; background: rgba(192,98,62,0.08); color: #C0623E; font-size: 0.75rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 8px 20px; border-radius: 50px; margin-bottom: 24px; border: 1px solid rgba(192,98,62,0.18); align-self: flex-start; }
+        .hero-card-left .hero-title { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 900; color: #1A1A1A; line-height: 1.25; margin-bottom: 12px; }
+        .hero-card-left .hero-subtitle { font-size: 0.95rem; font-weight: 700; color: #C0623E; margin-bottom: 20px; letter-spacing: 0.3px; }
+        .hero-card-left .hero-desc { font-size: 0.95rem; color: #3D2817; line-height: 1.85; margin-bottom: 32px; }
+        .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
+        .hero-feature-badges { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .feature-badge { display: inline-flex; align-items: center; gap: 6px; background: #FFF5EB; border: 1px solid rgba(192,98,62,0.15); color: #3D2817; font-size: 0.78rem; font-weight: 600; padding: 7px 16px; border-radius: 50px; }
+        .feature-badge .dot { width: 7px; height: 7px; background: #C0623E; border-radius: 50%; }
+        .hero-card-right { flex: 1 1 45%; background: #FFFDF7; border-radius: 24px; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,0.35); border: 1px solid rgba(192,98,62,0.12); display: flex; align-items: center; justify-content: center; min-height: 420px; position: relative; }
+        .hero-card-right img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .hero-card-right .map-overlay { position: absolute; bottom: 20px; right: 20px; background: rgba(44,24,16,0.82); backdrop-filter: blur(6px); color: #FFFDF7; font-size: 0.72rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; letter-spacing: 0.5px; }
+
+/* ABOUT */
+        .about { padding: 80px 0; background: #322118; }
+        .about .container { display: flex; align-items: center; gap: 64px; flex-wrap: wrap; }
+        .about-text { flex: 1 1 500px; }
+        .about-text .section-title { color: #FFFDF7; }
+        .about-text .section-desc { color: #C4B5A5; margin-bottom: 20px; }
+        .about-visual { flex: 1 1 360px; display: flex; align-items: center; justify-content: center; }
+        .about-illustration { width: 100%; max-width: 420px; aspect-ratio: 1/1; background: linear-gradient(135deg, #FFFDF7 0%, #F5EDDE 100%); border-radius: 24px; border: 1px solid rgba(192,98,62,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; position: relative; overflow: hidden; }
+        .about-illustration .hex-icon { width: 90px; height: 90px; background: #C0623E; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 2rem; font-weight: 900; }
+        .about-illustration .label { font-size: 0.9rem; font-weight: 700; color: #3D2817; letter-spacing: 1px; }
+        .about-illustration .ring { position: absolute; border: 1px solid rgba(192,98,62,0.12); border-radius: 50%; width: 200px; height: 200px; }
+        .about-illustration .ring:nth-child(3) { width: 280px; height: 280px; }
+        /* STATS */
+        .stats { padding: 64px 0; background: #2C1810; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        .stat-card { background: #FFFDF7; border: 1px solid rgba(192,98,62,0.10); border-radius: 18px; padding: 32px 24px; text-align: center; transition: all 0.3s ease; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(192,98,62,0.15); border-color: rgba(192,98,62,0.25); }
+        .stat-icon { font-size: 2rem; margin-bottom: 12px; }
+.stat-number { font-size: 2rem; font-weight: 900; color: #C0623E; margin-bottom: 6px; }
+        .stat-label { font-size: 0.85rem; font-weight: 600; color: #3D2817; line-height: 1.4; }
+        /* FEATURES */
+        .features { padding: 80px 0; background: #322118; }
+        .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-top: 20px; }
+        .feature-card { background: #FFFDF7; border: 1px solid rgba(192,98,62,0.10); border-radius: 18px; padding: 32px 28px; transition: all 0.3s ease; cursor: pointer; }
+        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(192,98,62,0.12); border-color: rgba(192,98,62,0.25); }
+        .feature-card-icon { font-size: 2.2rem; margin-bottom: 16px; }
+        .feature-card h3 { font-size: 1.15rem; font-weight: 800; color: #1A1A1A; margin-bottom: 10px; }
+        .feature-card p { font-size: 0.9rem; color: #3D2817; line-height: 1.7; margin-bottom: 16px; }
+        .arrow-link { font-size: 0.85rem; font-weight: 700; color: #C0623E; transition: gap 0.3s; display: inline-flex; align-items: center; gap: 4px; }
+        .feature-card:hover .arrow-link { gap: 8px; }
+        /* METHODOLOGY */
+        .methodology { padding: 80px 0; background: #2C1810; }
+        .methodology-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; margin-top: 20px; }
+        .step-card { background: #FFFDF7; border: 1px solid rgba(192,98,62,0.10); border-radius: 16px; padding: 28px 18px; text-align: center; transition: all 0.3s ease; }
+        .step-card:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(192,98,62,0.08); }
+        .step-number { width: 40px; height: 40px; background: #C0623E; color: #FFFFFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto; font-weight: 900; font-size: 0.95rem; }
+        .step-card h4 { font-size: 0.82rem; font-weight: 700; color: #1A1A1A; line-height: 1.4; }
+        /* FOOTER */
+        .footer { padding: 80px 0 40px 0; background: #322118; border-top: 1px solid rgba(255,253,247,0.06); }
+        .footer-cta { text-align: center; margin-bottom: 64px; padding: 60px 24px; background: linear-gradient(135deg, #FFFDF7 0%, #F5EDDE 100%); border-radius: 28px; border: 1px solid rgba(192,98,62,0.12); }
+        .footer-cta h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 900; color: #1A1A1A; margin-bottom: 28px; }
+        .footer-cta .btn-group { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .footer-main { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 40px; padding-bottom: 40px; border-bottom: 1px solid rgba(255,253,247,0.08); margin-bottom: 32px; }
+        .footer-brand .brand-name { font-size: 1.4rem; font-weight: 900; color: #FFFDF7; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .footer-brand .brand-desc { font-size: 0.85rem; color: #C4B5A5; max-width: 340px; line-height: 1.7; }
+        .footer-links { display: flex; gap: 60px; flex-wrap: wrap; }
+        .footer-col h4 { font-size: 0.85rem; font-weight: 800; color: #FFFDF7; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+        .footer-col a { display: block; font-size: 0.85rem; color: #C4B5A5; margin-bottom: 8px; transition: color 0.2s; }
+        .footer-col a:hover { color: #D4946A; }
+        .footer-bottom { text-align: center; font-size: 0.8rem; color: #8B7355; }
+        /* RESPONSIVE */
+        @media (max-width: 1024px) { .hero .container { flex-direction: column; } .hero-card-right { min-height: 320px; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .methodology-steps { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 768px) { .navbar-nav { display: none; } .menu-toggle { display: flex; } .hero-card-left { padding: 32px 24px; } .hero-card-left .hero-title { font-size: 1.6rem; } .hero-card-right { min-height: 260px; } .about .container { flex-direction: column; gap: 40px; } .features-grid { grid-template-columns: 1fr; } .methodology-steps { grid-template-columns: repeat(2, 1fr); } .footer-main { flex-direction: column; gap: 32px; } .footer-links { gap: 32px; } .hero { padding: 40px 0 48px 0; } }
+        @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; } .stat-card { padding: 20px 14px; } .stat-number { font-size: 1.4rem; } .methodology-steps { grid-template-columns: repeat(2, 1fr); gap: 10px; } .hero-actions { flex-direction: column; width: 100%; } .hero-actions .btn { width: 100%; } }
+    </style>
+</head>
+<body>
+<!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="navbar-logo"><span class="logo-icon">D</span>DENAH</a>
+            <div class="navbar-nav" id="mainNav">
+                <a href="#" class="active">Beranda</a>
+                <a href="#">Peta</a>
+                <a href="#">Statistik</a>
+                <a href="#">Tentang</a>
+                <a href="#">Metodologi</a>
+            </div>
+            <div class="lang-switch">
+                <span class="active">ID</span><span class="sep">|</span><span>EN</span>
+            </div>
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+<!-- HERO — SPLIT TWO-COLUMN CARD LAYOUT -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-card-left">
+                <span class="hero-tag">PERMUKIMAN BENGKULU</span>
+                <h1 class="hero-title">Pemetaan Permukiman Provinsi Bengkulu</h1>
+                <p class="hero-subtitle">DENAH — Digital Ecosystem & Navigation for Area Housing</p>
+                <p class="hero-desc">DENAH merupakan WebGIS yang menyajikan informasi sebaran permukiman di Provinsi Bengkulu berdasarkan hasil pengolahan dan klasifikasi citra satelit. Platform ini dirancang untuk mendukung pemantauan dan analisis perkembangan wilayah permukiman secara visual, informatif, dan mudah diakses oleh publik, akademisi, serta pemangku kebijakan. Dengan integrasi data spasial multi-temporal, DENAH memberikan gambaran distribusi permukiman yang dapat digunakan sebagai dasar dalam perencanaan tata ruang dan pengambilan keputusan berbasis data.</p>
+                <div class="hero-actions">
+                    <a href="#" class="btn btn-primary btn-lg">Jelajahi Peta</a>
+                    <a href="#" class="btn btn-outline btn-lg">Lihat Statistik</a>
+                </div>
+                <div class="hero-feature-badges">
+                    <span class="feature-badge"><span class="dot"></span>Peta Interaktif</span>
+                    <span class="feature-badge"><span class="dot"></span>Data Multi-Tahun</span>
+                    <span class="feature-badge"><span class="dot"></span>Statistik Spasial</span>
+                    <span class="feature-badge"><span class="dot"></span>Informasi Wilayah</span>
+                </div>
+            </div>
+            <div class="hero-card-right">
+                <img src="public/img/petabengkulu.jpg" alt="Peta Permukiman Provinsi Bengkulu" />
+                <span class="map-overlay">&#x1F5FA; Peta Bengkulu</span>
+            </div>
+        </div>
+    </section>
+<!-- TENTANG DENAH -->
+    <section class="about">
+        <div class="container">
+            <div class="about-text">
+                <span class="section-label">Tentang DENAH</span>
+                <h2 class="section-title">Memahami Permukiman dari Data Spasial</h2>
+                <p class="section-desc">DENAH — Digital Ecosystem & Navigation for Area Housing. DENAH merupakan WebGIS yang menyajikan informasi sebaran permukiman di Provinsi Bengkulu berdasarkan hasil pengolahan dan klasifikasi citra satelit. Platform ini dirancang untuk mendukung pemantauan dan analisis perkembangan wilayah permukiman secara visual, informatif, dan mudah diakses oleh publik, akademisi, serta pemangku kebijakan. Dengan integrasi data spasial multi-temporal, DENAH memberikan gambaran distribusi permukiman yang dapat digunakan sebagai dasar dalam perencanaan tata ruang dan pengambilan keputusan berbasis data.</p>
+                <br/>
+                <a href="#" class="btn btn-outline btn-sm">Selengkapnya</a>
+            </div>
+            <div class="about-visual">
+                <div class="about-illustration">
+                    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+                    <div class="hex-icon">D</div>
+                    <span class="label">DENAH</span>
+                </div>
+            </div>
+        </div>
+    </section>
+<!-- STATS -->
+    <section class="stats">
+        <div class="container">
+            <span class="section-label" style="display:block;text-align:center;">Ringkasan Data Permukiman</span>
+            <h2 class="section-title" style="text-align:center;">Angka dalam Sekilas</h2>
+            <span class="accent-line center"></span><br/>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="stat-icon">&#x1F3D8;</div><div class="stat-number">96.740 Ha</div><div class="stat-label">Luas Permukiman</div></div>
+                <div class="stat-card"><div class="stat-icon">&#x1F4CD;</div><div class="stat-number">129 wilayah</div><div class="stat-label">Wilayah Terpetakan</div></div>
+                <div class="stat-card"><div class="stat-icon">&#x1F5C2;</div><div class="stat-number">5 dataset</div><div class="stat-label">Data Spasial</div></div>
+                <div class="stat-card"><div class="stat-icon">&#x1F4C5;</div><div class="stat-number">2025</div><div class="stat-label">Tahun Pemetaan</div></div>
+            </div>
+        </div>
+    </section>
+<!-- FITUR UTAMA -->
+    <section class="features">
+        <div class="container">
+            <span class="section-label">Fitur Utama</span>
+            <h2 class="section-title">Eksplorasi Permukiman Lebih Dalam</h2>
+            <span class="accent-line center"></span>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-card-icon">&#x1F5FA;</div>
+                    <h3>Peta Interaktif</h3>
+                    <p>Jelajahi sebaran permukiman di Provinsi Bengkulu melalui peta digital yang dapat diakses secara langsung dan intuitif.</p>
+                    <span class="arrow-link">Jelajahi Peta &#x2192;</span>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-card-icon">&#x1F4CA;</div>
+                    <h3>Statistik</h3>
+                    <p>Analisis data permukiman melalui grafik dan ringkasan statistik yang mencakup luas, jumlah, dan sebaran wilayah.</p>
+                    <span class="arrow-link">Lihat Statistik &#x2192;</span>
+                </div>
+            </div>
+        </div>
+    </section>
+<!-- METODOLOGI -->
+    <section class="methodology">
+        <div class="container">
+            <span class="section-label">Metodologi</span>
+            <h2 class="section-title">Tahapan Pemetaan Permukiman</h2>
+            <span class="accent-line center"></span>
+            <div class="methodology-steps">
+                <div class="step-card"><div class="step-number">1</div><h4>Citra Satelit</h4></div>
+                <div class="step-card"><div class="step-number">2</div><h4>Pra-Pemrosesan</h4></div>
+                <div class="step-card"><div class="step-number">3</div><h4>Klasifikasi</h4></div>
+                <div class="step-card"><div class="step-number">4</div><h4>Validasi</h4></div>
+                <div class="step-card"><div class="step-number">5</div><h4>Visualisasi</h4></div>
+            </div>
+        </div>
+    </section>
+<!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-cta">
+                <h2>Siap Menjelajahi Data Permukiman?</h2>
+                <div class="btn-group">
+                    <a href="#" class="btn btn-primary btn-lg">Jelajahi Peta</a>
+                    <a href="#" class="btn btn-ghost btn-lg">Pelajari Lebih Lanjut</a>
+                </div>
+            </div>
+            <div class="footer-main">
+                <div class="footer-brand">
+                    <div class="brand-name">
+                        <span class="logo-icon" style="width:36px;height:36px;background:#C0623E;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;font-weight:800;">D</span>
+                        DENAH
+                    </div>
+                    <p class="brand-desc">Digital Ecosystem & Navigation for Area Housing — WebGIS sebaran permukiman Provinsi Bengkulu.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-col"><h4>Navigasi</h4><a href="#">Beranda</a><a href="#">Peta</a><a href="#">Statistik</a></div>
+                    <div class="footer-col"><h4>Informasi</h4><a href="#">Tentang</a><a href="#">Metodologi</a><a href="#">Kontak</a></div>
+                    <div class="footer-col"><h4>Bahasa</h4><a href="#">Bahasa Indonesia</a><a href="#">English</a></div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 DENAH — Digital Ecosystem & Navigation for Area Housing. Seluruh hak cipta dilindungi.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const menuToggle = document.getElementById('menuToggle');
+        const mainNav = document.getElementById('mainNav');
+        menuToggle.addEventListener('click', function() {
+            if (mainNav.style.display === 'flex') {
+                mainNav.style.display = 'none';
+            } else {
+                mainNav.style.display = 'flex';
+                mainNav.style.flexDirection = 'column';
+                mainNav.style.position = 'absolute';
+                mainNav.style.top = '72px';
+                mainNav.style.left = '0';
+                mainNav.style.right = '0';
+                mainNav.style.background = '#2C1810';
+                mainNav.style.padding = '24px';
+                mainNav.style.borderBottom = '1px solid rgba(255,253,247,0.08)';
+                mainNav.style.gap = '16px';
+                mainNav.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)';
+            }
+        });
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                mainNav.style.display = '';
+                mainNav.style.flexDirection = '';
+                mainNav.style.position = '';
+                mainNav.style.top = '';
+                mainNav.style.left = '';
+                mainNav.style.right = '';
+                mainNav.style.background = '';
+                mainNav.style.padding = '';
+                mainNav.style.borderBottom = '';
+                mainNav.style.gap = '';
+                mainNav.style.boxShadow = '';
+            }
+        });
+    </script>
+</body>
+</html>
